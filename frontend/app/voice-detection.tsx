@@ -53,46 +53,41 @@ export default function VoiceDetectionScreen() {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+const startRecording = async () => {
+  try {
+    const permission = await Audio.requestPermissionsAsync();
 
-      const { recording: newRecording } = await Audio.Recording.createAsync(
+    if (permission.status !== "granted") {
+      Alert.alert("Permission Denied", "Allow microphone permission first.");
+      return;
+    }
+
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+    });
+
+    const { recording: newRecording } =
+      await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
-      setRecording(newRecording);
-      setIsRecording(true);
-      setRecordingDuration(0);
 
-      // Start duration counter
-      durationInterval.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
-      }, 1000);
+    setRecording(newRecording);
+    setIsRecording(true);
+    setRecordingDuration(0);
 
-      // Start pulse animation
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start recording. Please try again.');
-    }
-  };
+    durationInterval.current = setInterval(() => {
+      setRecordingDuration((prev) => prev + 1);
+    }, 1000);
+
+  } catch (error) {
+    console.log("Recording Error:", error);
+    Alert.alert("Error", "Microphone could not start.");
+  }
+};
 
   const stopRecording = async () => {
     if (!recording) return;
